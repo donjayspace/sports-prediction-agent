@@ -1,4 +1,5 @@
 import { getPerformance } from "@/lib/api-client";
+import { CalibrationChart } from "@/components/calibration-chart";
 
 export const dynamic = "force-dynamic";
 
@@ -16,29 +17,13 @@ export default async function PerformancePage(): Promise<JSX.Element> {
         <Stat label="Log loss" value={summary.logLoss.toFixed(4)} />
       </div>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900 p-6">
-        <h2 className="mb-4 text-xl font-semibold">Calibration</h2>
-        <table className="w-full text-sm">
-          <thead className="text-left text-slate-400">
-            <tr>
-              <th className="py-2">Bin</th>
-              <th className="py-2">Predicted</th>
-              <th className="py-2">Observed</th>
-              <th className="py-2">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.calibration.map((row) => (
-              <tr key={row.bin} className="border-t border-slate-800">
-                <td className="py-2">{row.bin * 10}–{row.bin * 10 + 10}%</td>
-                <td className="py-2">{(row.predicted * 100).toFixed(1)}%</td>
-                <td className="py-2">{(row.observed * 100).toFixed(1)}%</td>
-                <td className="py-2">{row.count}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {summary.calibration.length > 0 ? (
+        <CalibrationChart points={summary.calibration} />
+      ) : (
+        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 text-sm text-slate-400">
+          No resolved predictions in the selected window yet.
+        </div>
+      )}
     </div>
   );
 }
