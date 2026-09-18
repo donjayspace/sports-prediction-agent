@@ -1,0 +1,14 @@
+{
+  "name": "sports-prediction-agent",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @sports/api --filter @sports/dashboard dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "test": "pnpm --recursive test",
+    "db:generate": "pnpm --filter @sports/api prisma:generate",
+    "db:migrate": "pnpm --filter @sports/api prisma:migrate",
+    "db:seed": "pnpm --filter @sports/api prisma:seed"
+  }
+}
