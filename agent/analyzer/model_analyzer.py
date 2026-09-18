@@ -1,29 +1,26 @@
-from agent.ai.base import AIResearchProvider
-from agent.ai.schemas import EventResearchInput
-from agent.analyzer.consensus import build_consensus
+from __future__ import annotations
+
+from agent.ai.schemas import ResearchRequest
+from agent.core.config import settings
+from agent.models.football.dixon_coles import DixonColesModel
 
 
 class ModelAnalyzer:
-    """Orchestrates multiple AI research providers and produces an auditable consensus."""
+    """Runs the statistical model layer for a given fixture."""
 
-    def __init__(self, providers: list[AIResearchProvider]) -> None:
-        if not providers:
-            raise ValueError("At least one provider is required")
-        self.providers = providers
+    def __init__(self, dixon_coles: DixonColesModel | None = None) -> None:
+        self._dixon_coles = dixon_coles
+        self._version = settings.model_version
 
-    def analyze(self, event: EventResearchInput) -> dict:
-        analyses = []
-        errors = []
-        for provider in self.providers:
-            try:
-                analyses.append(provider.analyze(event))
-            except Exception as exc:  # One provider failure must not hide other evidence.
-                errors.append({"provider": provider.provider_name, "error": str(exc)})
-        if not analyses:
-            raise RuntimeError(f"All AI providers failed: {errors}")
-        return {
-            "event_id": event.event_id,
-            "analyses": [analysis.model_dump() for analysis in analyses],
-            "consensus": build_consensus(analyses),
-            "errors": errors,
-        }
+    @property
+    def version(self) -> str:
+        return self._version
+
+    async def predict(self, req: ResearchRequest) -> dict[str, float]:
+        if req.sport != "football":
+            return {"home": 1 / 3, "draw": 1 / 3, "away": 1 / 3}
+
+        if self._dixon_coles is None:
+            return {"home": 0.45, "draw": 0.28, "away": 0.27}
+
+        return self._dixon_coles.predict(req.home_team, req.away_team)
