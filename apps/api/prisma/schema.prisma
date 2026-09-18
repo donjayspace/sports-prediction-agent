@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EventStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Event {
+  id           String       @id @default(cuid())
+  sport        String
+  competition  String
+  homeName     String?
+  awayName     String?
+  participants Json
+  startTime    DateTime
+  status       EventStatus  @default(SCHEDULED)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  forecasts    Forecast[]
+  result       EventResult?
+
+  @@index([sport, startTime])
+  @@index([competition, startTime])
+}
+
+model Forecast {
+  id              String    @id @default(cuid())
+  eventId         String
+  event            Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  predictionTime   DateTime
+  probabilities    Json
+  confidence      Float
+  modelVersion    String
+  featureVersion  String
+  promptVersion   String?
+  dataTimestamp   DateTime?
+  sourceSnapshot  Json?
+  reasoning       String?
+  createdAt       DateTime  @default(now())
+  evaluatedAt     DateTime?
+  correct         Boolean?
+
+  @@index([eventId, predictionTime])
+  @@index([modelVersion, createdAt])
+}
+
+model EventResult {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  outcome     String
+  recordedAt  DateTime @default(now())
+  source      String?
+  sourceUrl   String?
+}
+
+model Evaluation {
+  id            String   @id @default(cuid())
+  forecastId    String
+  metric        String
+  value         Float
+  evaluatedAt   DateTime @default(now())
+  forecast      Forecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+
+  @@index([metric, evaluatedAt])
+}
