@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  reactStrictMode: true
+const config: NextConfig = {
+  reactStrictMode: true,
+  output: "standalone",
+  poweredByHeader: false,
+  experimental: { typedRoutes: true },
 };
 
-export default nextConfig;
+export default config;
