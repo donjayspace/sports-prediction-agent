@@ -1,19 +1,19 @@
+from __future__ import annotations
+
 from fastapi import FastAPI
+
+from agent.api.routes import analyze, health
+from agent.core.config import settings
 from agent.core.logging import configure_logging
 
-configure_logging()
+configure_logging(settings.log_level)
 
-app = FastAPI(title="Sports Research Agent", version="0.1.0")
+app = FastAPI(
+    title="Sports Prediction Agent",
+    version=settings.agent_version,
+    docs_url="/docs",
+    redoc_url=None,
+)
 
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-@app.post("/analyze")
-async def analyze(payload: dict) -> dict:
-    # Keep the first endpoint transport-only; domain analysis remains in agent/analyzer.
-    return {"status": "accepted", "event_id": str(payload.get("event_id", ""))}
-
-@app.post("/research")
-async def research(payload: dict) -> dict:
-    return {"status": "accepted", "event_id": str(payload.get("event_id", ""))}
+app.include_router(health.router)
+app.include_router(analyze.router)
