@@ -1,19 +1,18 @@
-import os
+from __future__ import annotations
 
-from agent.ai.base import AIResearchProvider
+from agent.ai.base import BaseAnalyzer
 from agent.ai.gemini.analyzer import GeminiAnalyzer
 from agent.ai.grok.analyzer import GrokAnalyzer
+from agent.core.config import LLMProvider, settings
 
 
-def create_providers() -> list[AIResearchProvider]:
-    """Build enabled providers from environment without coupling callers to SDKs."""
-    names = [x.strip().lower() for x in os.getenv("AI_PROVIDERS", "gemini,grok").split(",") if x.strip()]
-    providers: list[AIResearchProvider] = []
-    for name in names:
-        if name == "gemini" and os.getenv("GEMINI_API_KEY"):
-            providers.append(GeminiAnalyzer())
-        elif name == "grok" and os.getenv("XAI_API_KEY"):
-            providers.append(GrokAnalyzer())
-    if not providers:
-        raise RuntimeError("No configured AI providers. Set AI_PROVIDERS and provider API keys.")
-    return providers
+def get_analyzer(provider: LLMProvider | str | None = None) -> BaseAnalyzer:
+    resolved = provider if provider is not None else settings.default_llm_provider
+    if isinstance(resolved, str):
+        resolved = LLMProvider(resolved.lower())
+
+    if resolved == LLMProvider.GROK:
+        return GrokAnalyzer(api_key=settings.xai_api_key, model=settings.grok_model)
+    if resolved == LLMProvider.GEMINI:
+        return GeminiAnalyzer(api_key=settings.gemini_api_key, model=settings.gemini_model)
+    raise ValueError(f"Unsupported provider: {resolved!r}")
