@@ -2,8 +2,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-
-Outcome = Literal["home", "away", "draw", "player_a", "player_b", "over", "under"]
+Outcome = Literal["home", "away", "draw", "player_a", "player_b"]
 
 
 class ResearchEvidence(BaseModel):
