@@ -1,17 +1,31 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 
-def weighted_average(distributions: list[tuple[dict[str, float], float]]) -> dict[str, float]:
-    """Combine compatible probability distributions using normalized model weights."""
-    if not distributions:
-        raise ValueError("at least one distribution is required")
-    total_weight = sum(weight for _, weight in distributions)
-    if total_weight <= 0:
-        raise ValueError("model weights must contain positive mass")
-    outcomes = set().union(*(distribution.keys() for distribution, _ in distributions))
-    combined = {
-        outcome: sum(distribution.get(outcome, 0.0) * weight for distribution, weight in distributions) / total_weight
-        for outcome in outcomes
-    }
-    total = sum(combined.values())
-    return {outcome: probability / total for outcome, probability in combined.items()}
+from agent.ai.schemas import ProbabilityTriple
+
+
+@dataclass(frozen=True)
+class EnsembleWeights:
+    stat_weight: float
+    llm_weight: float
+
+    @classmethod
+    def from_llm_confidence(
+        cls, llm_confidence: float, max_llm_weight: float = 0.4
+    ) -> "EnsembleWeights":
+        llm_w = max(0.0, min(llm_confidence, max_llm_weight))
+        return cls(stat_weight=1.0 - llm_w, llm_weight=llm_w)
+
+
+def blend_probabilities(
+    stat: ProbabilityTriple,
+    llm: ProbabilityTriple,
+    weights: EnsembleWeights,
+) -> ProbabilityTriple:
+    blended = ProbabilityTriple(
+        home=weights.stat_weight * stat.home + weights.llm_weight * llm.home,
+        draw=weights.stat_weight * stat.draw + weights.llm_weight * llm.draw,
+        away=weights.stat_weight * stat.away + weights.llm_weight * llm.away,
+    )
+    return blended.normalised()
