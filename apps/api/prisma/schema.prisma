@@ -14,6 +14,26 @@ enum EventStatus {
   CANCELLED
 }
 
+enum Sport {
+  FOOTBALL
+  BASKETBALL
+  TENNIS
+  TABLE_TENNIS
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  POSTPONED
+  CANCELLED
+}
+enum Outcome {
+  HOME
+  DRAW
+  AWAY
+}
+
 model Event {
   id           String       @id @default(cuid())
   sport        String
@@ -67,9 +87,133 @@ model Evaluation {
   id            String   @id @default(cuid())
   forecastId    String
   metric        String
+  sport         Sport
+  windowStart   DateTime
+  windowEnd     DateTime
+  nPredictions  Int
+  brierScore    Float
+  logLoss       Float
+  accuracy      Float
+  calibrationJson Json?
+  createdAt     DateTime @default(now())
   value         Float
   evaluatedAt   DateTime @default(now())
   forecast      Forecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
 
+  @@index([sport, windowStart])
   @@index([metric, evaluatedAt])
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  externalId  String?  @unique
+  name        String
+  sport       Sport
+  country     String?
+  createdAt   DateTime @default(now())
+
+  homeFixtures Fixture[] @relation("HomeTeam")
+  awayFixtures Fixture[] @relation("AwayTeam")
+
+  @@index([sport, name])
+}
+
+model Fixture {
+  id           String      @id @default(cuid())
+  externalId   String?     @unique
+  sport        Sport
+  league       String
+  status       MatchStatus @default(SCHEDULED)
+  kickoffUtc   DateTime
+
+  homeTeamId   String
+  awayTeamId   String
+  homeTeam     Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam     Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+
+  homeScore    Int?
+  awayScore    Int?
+
+  prediction   Prediction?
+  features     Feature[]    @relation("FixtureFeatures")
+  results      Result[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([sport, kickoffUtc])
+  @@index([status, kickoffUtc])
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  fixtureId   String
+  fixture     Fixture  @relation("FixtureFeatures", fields: [fixtureId], references: [id], onDelete: Cascade)
+  sport       Sport
+  name        String
+  value       Float
+  computedAt  DateTime @default(now())
+  version     String   @default("v1")
+
+  @@unique([fixtureId, name, version])
+  @@index([fixtureId])
+}
+
+model Prediction {
+  id          String      @id @default(cuid())
+  fixtureId   String      @unique
+  fixture     Fixture     @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+
+  // Statistical model output
+  statHome    Float?
+  statDraw    Float?
+  statAway    Float?
+
+  // LLM research output
+  llmHome     Float?
+  llmDraw     Float?
+  llmAway     Float?
+  llmConfidence Float?
+  llmResearch Json?
+
+  // Final blended + calibrated
+  finalHome   Float
+  finalDraw   Float
+  finalAway   Float
+
+  // Provenance
+  modelVersion    String
+  pipelineRunId   String?
+  agentVersion    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
+model Result {
+  id          String   @id @default(cuid())
+  fixtureId   String
+  fixture     Fixture  @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  outcome     Outcome
+  homeScore   Int
+  awayScore   Int
+  resolvedAt  DateTime @default(now())
+
+  @@unique([fixtureId])
+  @@index([resolvedAt])
+}
+
+model AgentRun {
+  id          String   @id @default(cuid())
+  fixtureId   String?
+  kind        String   // "analyze" | "research" | "collect" | "evaluate"
+  status      String   // "pending" | "running" | "success" | "failed"
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  error       String?
+  metadata    Json?
+
+  @@index([kind, startedAt])
 }
