@@ -1,19 +1,34 @@
-import os
+from __future__ import annotations
 
-from openai import OpenAI
+import asyncio
+
+from xai_sdk import Client
+from xai_sdk.chat import Chat, system, user
 
 
 class GrokClient:
-    """OpenAI-compatible xAI client kept isolated from domain logic."""
+    """Thin async-friendly wrapper around the xAI SDK chat API."""
 
-    def __init__(self, model: str | None = None) -> None:
-        api_key = os.getenv("XAI_API_KEY")
+    def __init__(self, api_key: str, model: str, timeout_seconds: float = 60.0) -> None:
         if not api_key:
-            raise RuntimeError("XAI_API_KEY is required")
-        self.model = model or os.getenv("XAI_MODEL", "grok-4.6")
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.x.ai/v1",
-            timeout=120,
-            max_retries=2,
+            raise ValueError("xAI API key is required")
+        self._client = Client(api_key=api_key)
+        self._model = model
+        self._timeout = timeout_seconds
+
+    def _build_chat(self, system_prompt: str, user_prompt: str) -> Chat:
+        chat = self._client.chat.create(model=self._model)
+        chat.append(system(system_prompt))
+        chat.append(user(user_prompt))
+        return chat
+
+    async def complete(self, system_prompt: str, user_prompt: str) -> str:
+        def _run() -> str:
+            chat = self._build_chat(system_prompt, user_prompt)
+            response = chat.sample()
+            return response.content
+
+        return await asyncio.wait_for(
+            asyncio.to_thread(_run),
+            timeout=self._timeout,
         )
