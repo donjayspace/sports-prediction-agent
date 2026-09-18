@@ -1,14 +1,28 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
-from agent.ai.schemas import AIAnalysis, EventResearchInput
+from agent.ai.schemas import (
+    ProviderPrediction,
+    ResearchRequest,
+    ResearchResult,
+)
 
 
-class AIResearchProvider(ABC):
-    """Common contract so Gemini, Grok, or future providers are interchangeable."""
+class BaseAnalyzer(ABC):
+    """Abstract interface for LLM-backed research + synthesis providers."""
 
-    provider_name: str
+    @property
+    @abstractmethod
+    def provider_name(self) -> str: ...
 
     @abstractmethod
-    def analyze(self, event: EventResearchInput) -> AIAnalysis:
-        """Analyze one point-in-time event snapshot."""
-        raise NotImplementedError
+    async def research(self, req: ResearchRequest) -> ResearchResult: ...
+
+    @abstractmethod
+    async def synthesize(
+        self,
+        req: ResearchRequest,
+        research: ResearchResult,
+        stat_prediction: dict[str, float],
+    ) -> ProviderPrediction: ...
