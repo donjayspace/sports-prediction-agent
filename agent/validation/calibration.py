@@ -1,38 +1,53 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from dataclasses import dataclass
+
+import numpy as np
+from sklearn.isotonic import IsotonicRegression
 
 
-def multiclass_brier(probabilities: dict[str, float], actual: str) -> float:
-    """Multiclass Brier score; lower values indicate better probabilistic forecasts."""
-    if not probabilities:
-        raise ValueError("probabilities cannot be empty")
-    return sum((p - (1.0 if outcome == actual else 0.0)) ** 2 for outcome, p in probabilities.items())
+@dataclass
+class _Calibrator:
+    home: IsotonicRegression
+    draw: IsotonicRegression
+    away: IsotonicRegression
 
 
-def multiclass_log_loss(probabilities: dict[str, float], actual: str, floor: float = 1e-15) -> float:
-    """Log loss with a small floor to avoid undefined log(0)."""
-    import math
-    probability = max(float(probabilities.get(actual, 0.0)), floor)
-    return -math.log(probability)
+class ProbabilityCalibrator:
+    """Per-class isotonic calibration for 1X2 probability triples."""
 
+    def __init__(self) -> None:
+        self._calibrator: _Calibrator | None = None
 
-def reliability_bins(records: Iterable[tuple[float, bool]], bins: int = 10) -> list[dict[str, float | int]]:
-    """Build confidence/reliability bins for calibration inspection."""
-    if bins < 1:
-        raise ValueError("bins must be positive")
-    grouped = [[] for _ in range(bins)]
-    for confidence, correct in records:
-        index = min(int(confidence * bins), bins - 1)
-        grouped[index].append((confidence, correct))
-    output = []
-    for index, group in enumerate(grouped):
-        if not group:
-            continue
-        output.append({
-            "bin": index,
-            "count": len(group),
-            "mean_confidence": sum(x for x, _ in group) / len(group),
-            "observed_accuracy": sum(1 for _, ok in group if ok) / len(group),
-        })
-    return output
+    def fit(
+        self,
+        y_home: np.ndarray,
+        y_draw: np.ndarray,
+        y_away: np.ndarray,
+        p_home: np.ndarray,
+        p_draw: np.ndarray,
+        p_away: np.ndarray,
+    ) -> None:
+        def _fit(y: np.ndarray, p: np.ndarray) -> IsotonicRegression:
+            model = IsotonicRegression(out_of_bounds="clip")
+            model.fit(p, y)
+            return model
+
+        self._calibrator = _Calibrator(
+            home=_fit(y_home, p_home),
+            draw=_fit(y_draw, p_draw),
+            away=_fit(y_away, p_away),
+        )
+
+    def calibrate(self, home: float, draw: float, away: float) -> tuple[float, float, float]:
+        if self._calibrator is None:
+            raise RuntimeError("Calibrator has not been fitted")
+
+        c_home = float(self._calibrator.home.predict(np.array([home]))[0])
+        c_draw = float(self._calibrator.draw.predict(np.array([draw]))[0])
+        c_away = float(self._calibrator.away.predict(np.array([away]))[0])
+
+        total = c_home + c_draw + c_away
+        if total <= 0:
+            return home, draw, away
+        return c_home / total, c_draw / total, c_away / total
