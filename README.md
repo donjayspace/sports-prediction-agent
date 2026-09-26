@@ -1,6 +1,9 @@
-[![Download PRD](https://img.shields.io/badge/Download-PRD__GUIDE.md-blue?style=for-the-badge&logo=markdown)](https://raw.githubusercontent.com/donjayspace/sports-prediction-agent.git/main/docs/PRD_GUIDE.md)
-
 # Sports Prediction Agent
+
+[![PRD](https://img.shields.io/badge/PRD-PRD__GUIDE.md-blue?style=for-the-badge&logo=markdown)](https://github.com/donjayspace/sports-prediction-agent/blob/main/docs/PRD_GUIDE.md)
+[![Download PRD](https://img.shields.io/badge/Download-raw%20markdown-success?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/donjayspace/sports-prediction-agent/main/docs/PRD_GUIDE.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
 
 A full-stack sports prediction system that combines classical statistical models
 with LLM-driven research to produce calibrated probabilistic forecasts for
