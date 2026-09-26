@@ -1,3 +1,5 @@
+[![Download PRD](https://img.shields.io/badge/Download-PRD__GUIDE.md-blue?style=for-the-badge&logo=markdown)](https://raw.githubusercontent.com/<user>/<repo>/main/docs/PRD_GUIDE.md)
+
 # Sports Prediction Agent
 
 A full-stack sports prediction system that combines classical statistical models
@@ -5,6 +7,13 @@ with LLM-driven research to produce calibrated probabilistic forecasts for
 football, basketball, tennis, and table tennis.
 
 ## Architecture
+
+``text
+Next.js dashboard → Fastify API (Prisma) → Python agent (FastAPI)
+│ │
+▼ ▼
+PostgreSQL Grok / Gemini
+```
 
 - **`apps/dashboard`** — Next.js 15 App Router UI. Server components for
   initial render, client components for live updates.
