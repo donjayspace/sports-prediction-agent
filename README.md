@@ -1,4 +1,4 @@
-[![Download PRD](https://img.shields.io/badge/Download-PRD__GUIDE.md-blue?style=for-the-badge&logo=markdown)](https://raw.githubusercontent.com/donjayspace/sports-prediction-agent/main/docs/PRD_GUIDE.md)
+[![Download PRD](https://img.shields.io/badge/Download-PRD__GUIDE.md-blue?style=for-the-badge&logo=markdown)](https://raw.githubusercontent.com/donjayspace/sports-prediction-agent.git/main/docs/PRD_GUIDE.md)
 
 # Sports Prediction Agent
 
